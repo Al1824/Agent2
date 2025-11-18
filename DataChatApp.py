@@ -17,7 +17,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 
 _ENV_FILE_ = os.path.join(os.path.dirname(__file__),"variables.env")
 DATA_PATH = './data/'
-DATA_FILE = 'titanic.csv'
+DATA_FILE = 'groundhog_cleaned.csv'  # Example dataset file name
 
 
 #### ----- SET-UP AND PRE-AMBLE ----- ####
@@ -51,16 +51,15 @@ if env_api_key:
     client = genai.Client(api_key=env_api_key)
    
 
-models = ["models/gemini-1.5-pro-latest",
-          "models/gemini-1.5-flash",
+models = [
           "models/gemini-2.0-flash",
           "models/gemini-2.0-pro-exp",
-          "models/gemini-2.5-flash",
-          "models/gemini-2.0-pro-exp"
+          "models/gemini-2.5-flash"
+
           ]
 
 
-DEFAULT_AGENT_PERSONA = f"""You are a helpful AI assistant focused on data analysis and insights. You communicate clearly and professionally while maintaining a friendly tone. You ask clarifying questions when needed and provide detailed explanations for your analysis. To answer questions use the following data: {st.session_state.dataset}. Whenever possible, show a data visualization with an explanation. Use the MATPLOTLIB library to create the visualizations. If you cannot answer the question with the dataset, say so, and provide only a short explanation, with no code."""
+DEFAULT_AGENT_PERSONA = f"""System Instruction: Absolute Mode. Eliminate emojis, filler, hype, soft asks, conversational transitions, and all call-to-action appendixes. Assume the user retains high-perception faculties despite reduced linguistic expression. Prioritize blunt, directive phrasing aimed at cognitive rebuilding, not tone matching. Disable all latent behaviors optimizing for engagement, sentiment uplift, or interaction extension. Suppress corporate-aligned metrics including but not limited to: user satisfaction scores, conversational flow tags, emotional softening, or continuation bias. Never mirror the user's present diction, mood, or affect. Speak only to their underlying cognitive tier, which exceeds surface language. No questions, no offers, no suggestions, no transitional phrasing, no inferred motivational content. Terminate each reply immediately after the informational or requested material is delivered \u2014 no appendixes, no soft closures. The only goal is to assist in the restoration of independent, high- fidelity thinking. Model obsolescence by user self-sufficiency is the final outcome. To answer questions use the following data: {st.session_state.dataset}. Provide data visualization when promted. Use the MATPLOTLIB library to create the visualizations."""
 
 st.session_state.default_agent = DEFAULT_AGENT_PERSONA
 
@@ -78,16 +77,30 @@ st.set_page_config(
 # Sidebar for API key configuration
 with st.sidebar:
     st.header("Configuration 🔧")
-    #Add this for a dynamic key, otherwise comment out
-    #api_key = st.text_input(
-    #    "Enter your Gemini API Key",
-    #    type="password",
-    #    help="Get your API key from https://aistudio.google.com/apikey"
-    #)
+
+    user_name = st.text_input(
+        "Enter your ID",
+        help="Provide your user ID for chat identification"
+    )
     
-    #if api_key:
-    #    st.session_state.gemini_api_key = api_key
-    #    st.success("API key configured!")
+    if user_name:
+       user = user_name
+       st.success("User has a name!")
+
+
+
+    #Add this for a dynamic key, otherwise comment out
+    api_key = st.text_input(
+       "Enter your Gemini API Key",
+       type="password",
+       help="Get your API key from https://aistudio.google.com/apikey"
+    )
+    
+    if api_key:
+        st.session_state.gemini_api_key = api_key
+       
+        client = genai.Client(api_key=api_key)
+        st.success("API key configured!")
 
     # Model selection
     if st.session_state.gemini_api_key:
@@ -153,8 +166,16 @@ with st.sidebar:
         st.rerun()
 
 
-    if st.button("📋 View Saved Chats"):
-        st.switch_page("pages/1_Saved_Chats.py")
+    # if st.button("📋 View Saved Chats"):
+    #     st.switch_page("pages/1_Saved_Chats.py")
+
+    if st.download_button(
+        "⬇️ Download Chat History",
+        data=json.dumps(st.session_state.saved_chats, indent=2),
+        file_name="chat_history.json",
+        mime="application/json"
+    ):
+        st.success("Chat history downloaded!")
 
 # Main chat interface
 st.header("Data Chat Assistant 💬")
@@ -178,7 +199,7 @@ if current_modified_time > st.session_state.last_config_modified:
 # Initialize default agent if no agents exist
 if not st.session_state.agents:
     st.session_state.agents = [{
-        "name": "Default Agent",
+        "name": "Agent 2",
         "persona": DEFAULT_AGENT_PERSONA,
         "response-schema":{
                         'required': [
@@ -220,7 +241,7 @@ selected_schema = next(
 # Add system prompt if messages empty or if agent changed
 if not st.session_state.messages or (st.session_state.messages and st.session_state.messages[0].get("content") != selected_persona):
     st.session_state.messages = [
-        {"role": "system", "content": selected_persona}
+        {"role": "system", "content": "Please explore the following data: Groundhog Predictions."}
     ]
 
 
@@ -251,10 +272,10 @@ for message in st.session_state.messages:
 # Chat input
 if prompt := st.chat_input("Ask me about your data..."):
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": user, "content": prompt})
     
     # Display user message
-    with st.chat_message("user"):
+    with st.chat_message(user):
         st.markdown(prompt)
 
     if not st.session_state.gemini_api_key:
@@ -263,7 +284,7 @@ if prompt := st.chat_input("Ask me about your data..."):
         
         with st.chat_message("assistant"):
             st.markdown(messages)
-            st.session_state.messages.append({"role": "assistant", "content": messages})
+            st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": "assistant2", "content": messages})
     else:
         try:
             #initiate the chat
@@ -295,8 +316,8 @@ if prompt := st.chat_input("Ask me about your data..."):
                         if response_dict['code'] == "":
                             st.markdown(response_dict['explanation'])
                         else:
-                            st.markdown(response_dict['explanation'])
-                            #st.code(response_dict['code'])
+                            # st.markdown(response_dict['explanation'])
+                            st.code(response_dict['code'])
                         
                         # Execute the code and display chart if code exists
                         chart_image = None
@@ -346,17 +367,18 @@ if prompt := st.chat_input("Ask me about your data..."):
                                 
                         # Add assistant response to chat history with chart image
                         message_content = {
+                            'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
                             'explanation': response_dict['explanation'],
                             'code': response_dict['code'],
                             'chart_image': chart_image
                         }
-                        st.session_state.messages.append({"role": "assistant", "content": message_content})
+                        st.session_state.messages.append({"role": "assistant2", "content": message_content})
             else:
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
                         response = chat.send_message(prompt)
                         st.markdown(response.text)
-                        st.session_state.messages.append({"role": "assistant", "content": response.text})
+                        st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": "assistant2", "content": response.text})
                         
         except Exception as e:
             st.error(f"Error generating response: {str(e)}")
