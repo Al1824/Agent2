@@ -272,7 +272,7 @@ for message in st.session_state.messages:
 # Chat input
 if prompt := st.chat_input("Ask me about your data..."):
     # Add user message to chat history
-    st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": user, "content": prompt})
+    st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),'model': selected_model,"role": user, "content": prompt})
     
     # Display user message
     with st.chat_message(user):
@@ -284,7 +284,7 @@ if prompt := st.chat_input("Ask me about your data..."):
         
         with st.chat_message("assistant"):
             st.markdown(messages)
-            st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": "assistant2", "content": messages})
+            st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),'model': selected_model,"role": "assistant2", "content": messages})
     else:
         try:
             #initiate the chat
@@ -369,6 +369,7 @@ if prompt := st.chat_input("Ask me about your data..."):
                         message_content = {
                             'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
                             'explanation': response_dict['explanation'],
+                            'model': selected_model,
                             'code': response_dict['code'],
                             'chart_image': chart_image
                         }
@@ -378,7 +379,7 @@ if prompt := st.chat_input("Ask me about your data..."):
                     with st.spinner("Thinking..."):
                         response = chat.send_message(prompt)
                         st.markdown(response.text)
-                        st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),"role": "assistant2", "content": response.text})
+                        st.session_state.messages.append({ 'timestamp': datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),'model': selected_model,"role": "assistant2", "content": response.text})
                         
         except Exception as e:
             st.error(f"Error generating response: {str(e)}")
